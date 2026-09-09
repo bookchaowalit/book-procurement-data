@@ -1,0 +1,340 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "retrieved_at",
+    "data_status",
+    "items"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "procurement.v1"
+    },
+    "source": {
+      "const": "book-procurement-data"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data_status": {
+      "enum": [
+        "fixture",
+        "live"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "category",
+          "source_url",
+          "provider",
+          "status",
+          "deadline",
+          "eligible_countries",
+          "eligibility_text",
+          "value",
+          "cost",
+          "terms",
+          "related_records",
+          "provenance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "enum": [
+              "rfp",
+              "rfq",
+              "public-tender",
+              "vendor-registration",
+              "framework-agreement"
+            ]
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "open",
+              "closed",
+              "unknown"
+            ]
+          },
+          "deadline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "at"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "fixed",
+                  "rolling",
+                  "unknown"
+                ]
+              },
+              "at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "fixed"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "at": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "eligible_countries": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^([A-Z]{2}|GLOBAL)$"
+            },
+            "uniqueItems": true
+          },
+          "eligibility_text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "amount",
+              "currency",
+              "guaranteed"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "cash",
+                  "credit",
+                  "discount",
+                  "in_kind",
+                  "access",
+                  "variable",
+                  "unknown"
+                ]
+              },
+              "amount": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "currency": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[A-Z]{3}$"
+              },
+              "guaranteed": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "cost": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fee_amount",
+              "currency",
+              "auto_renewal",
+              "notes"
+            ],
+            "properties": {
+              "fee_amount": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "currency": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[A-Z]{3}$"
+              },
+              "auto_renewal": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "notes": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "terms": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "buyer_type",
+              "procurement_method",
+              "bid_security_required",
+              "vendor_requirements"
+            ],
+            "properties": {
+              "buyer_type": {
+                "enum": [
+                  "public",
+                  "private",
+                  "nonprofit"
+                ]
+              },
+              "procurement_method": {
+                "type": "string",
+                "minLength": 1
+              },
+              "bid_security_required": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "vendor_requirements": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "related_records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "schema_version",
+                "record_id",
+                "relation"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "record_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "relation": {
+                  "enum": [
+                    "funds",
+                    "includes",
+                    "requires",
+                    "same_program"
+                  ]
+                }
+              }
+            }
+          },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_kind",
+              "source_id",
+              "source_record_id",
+              "checked_at",
+              "raw_object_key",
+              "bronze_manifest_key"
+            ],
+            "properties": {
+              "evidence_kind": {
+                "enum": [
+                  "fixture",
+                  "captured"
+                ]
+              },
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_record_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "checked_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "raw_object_key": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "bronze_manifest_key": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Procurement and tenders export v1",
+  "description": "Find buyer requests with vendor qualification and bid requirements."
+}

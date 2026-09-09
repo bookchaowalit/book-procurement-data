@@ -1,0 +1,32 @@
+{
+  "id": "contracts-finder-open-tenders",
+  "product": "book-procurement-data",
+  "domain": "procurement",
+  "schema_version": "procurement.v1",
+  "fetch_url": "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search",
+  "fetch_query": {
+    "limit": "100",
+    "stages": "tender"
+  },
+  "source_url": "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search",
+  "access": "ocds-api",
+  "content_type": "application/json",
+  "category": "public-tender",
+  "category_capabilities": [
+    "rfp",
+    "rfq",
+    "public-tender",
+    "vendor-registration",
+    "framework-agreement"
+  ],
+  "category_rule": "Explicit markers in title, procurement method or frameworkAgreement field; otherwise public-tender.",
+  "provider": "Contracts Finder / UK Cabinet Office",
+  "enabled": true,
+  "permission_status": "reviewed-public-read",
+  "reviewed_at": "2026-09-07",
+  "permission_evidence": "https://www.gov.uk/government/publications/open-contracting",
+  "owner": "bookchaowalit",
+  "min_interval_seconds": 21600,
+  "retention": "private local raw archive; operational retention; no automatic deletion",
+  "use": "public procurement notice metadata for personal discovery; no contact-body republication"
+}

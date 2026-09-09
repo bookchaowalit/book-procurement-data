@@ -1,0 +1,20 @@
+{
+  "domain": "procurement",
+  "enabled_sources": ["contracts-finder-open-tenders"],
+  "enabled_category_capabilities": [
+    "rfp",
+    "rfq",
+    "public-tender",
+    "vendor-registration",
+    "framework-agreement"
+  ],
+  "candidate_source_classes": [
+    "official program API or export",
+    "official RSS or announcement feed",
+    "official public program page"
+  ],
+  "permission_status": "reviewed-public-read",
+  "network_enabled": true,
+  "policy_file": "src/book_procurement_data/source-contracts-finder-open-tenders.json",
+  "notes": "One manually invoked public OCDS API source is enabled with a six-hour minimum interval and an explicit tender-stage query (stages=tender, limit=100). The adapter keeps active tender notices with future closing dates and strips contact details from the normalized contract; verify every notice and tender portal before bidding."
+}

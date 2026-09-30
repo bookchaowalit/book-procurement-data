@@ -22,19 +22,19 @@ cli = importlib.import_module(PROJECT.replace("-", "_") + ".cli")
 
 # Three variants: base, +contract --version v2, +v2 availability windows (benefit).
 CLI_SHA256 = {
-    "book-benefit-data": "dcc8c2edafafcba41ed1256ae876a903c7e812d0ebc92d87e9a58534bf1e7f90",
-    "book-competition-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-creator-program-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-deal-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-freebie-data": "6951a3912ef91ca0b2801b9be71936d40311018a8962c0aa83ee7bafd41888e8",
-    "book-grant-data": "6951a3912ef91ca0b2801b9be71936d40311018a8962c0aa83ee7bafd41888e8",
-    "book-learning-program-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-mobility-program-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-paid-study-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-partnership-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-procurement-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
-    "book-scholarship-data": "6951a3912ef91ca0b2801b9be71936d40311018a8962c0aa83ee7bafd41888e8",
-    "book-startup-program-data": "dec86b2edacdd5988b199808231387a81804337d4caa407f599a8d522709db28",
+    "book-benefit-data": "d7d0837be73c71a51a8427fa37875f592caab83c9f709340cce991300b97e20f",
+    "book-competition-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-creator-program-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-deal-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-freebie-data": "987d38370537c268dda6af63987ab258bb3f8cef31568b03182a95858efd74dc",
+    "book-grant-data": "987d38370537c268dda6af63987ab258bb3f8cef31568b03182a95858efd74dc",
+    "book-learning-program-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-mobility-program-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-paid-study-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-partnership-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-procurement-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
+    "book-scholarship-data": "987d38370537c268dda6af63987ab258bb3f8cef31568b03182a95858efd74dc",
+    "book-startup-program-data": "5b4a7327093da486483dc123db547dde3b5c6c5ce6a4f24be084f06c50e6d998",
 }
 
 
@@ -119,6 +119,35 @@ class ValidateTest(unittest.TestCase):
                     cli.validate(live_demo(host))
                 except ValueError as error:
                     self.assertNotIn("synthetic", str(error))
+
+
+class TextNormalisationTest(unittest.TestCase):
+    def test_blank_or_invisible_required_text_is_rejected(self):
+        for field in ("id", "title", "provider", "eligibility_text"):
+            for value in (" ", "\u200b", "\ufeff\u00ad\u2060"):
+                payload = copy.deepcopy(cli.resource("demo.json"))
+                payload["items"][0][field] = value
+                with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    cli.validate(payload)
+
+    def test_ids_differing_only_by_invisible_characters_are_duplicates(self):
+        payload = copy.deepcopy(cli.resource("demo.json"))
+        twin = copy.deepcopy(payload["items"][0])
+        twin["id"] = "\u200b" + twin["id"] + " "
+        payload["items"].append(twin)
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            cli.validate(payload)
+
+    def test_query_matches_thai_and_full_width_spellings(self):
+        payload = copy.deepcopy(cli.resource("demo.json"))
+        target = payload["items"][0]
+        target["title"] = "ลดค่าน้ำประปา ปี 2569 UK"
+        # SARA AM vs NIKHAHIT + SARA AA (either mark order), Thai digits,
+        # full-width Latin and a stray zero-width space.
+        for query in ("น้ำ", "น\u0e49\u0e4d\u0e32", "น\u0e4d\u0e49\u0e32", "๒๕๖๙", "ＵＫ", "u\u200bk"):
+            with self.subTest(query=query):
+                found = cli.filter_items(payload, payload["retrieved_at"], query=query)
+                self.assertIn(target["id"], [item["id"] for item in found])
 
 
 if __name__ == "__main__":

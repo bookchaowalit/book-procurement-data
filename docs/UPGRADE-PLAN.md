@@ -49,3 +49,18 @@ Score: 5.5/10 -> 7.5/10 (pass 1) -> 7.5/10 (pass 2) — one malformed OCDS relea
 - Shared `cli.py` (same edit in all 13 sibling copies): `validate` now rejects NaN, ±Infinity and overflowing literals such as `1e400` (Python's json turns them into non-finite floats that JSON Schema `number` accepted); `timestamp` normalises fractional seconds so Python 3.10 accepts the same RFC3339 values as 3.11+ (it rejected e.g. `.1Z`) and only ASCII digits match; a trailing-dot `example.org.` host can no longer be claimed `live`.
 - `tests/test_shared_cli.py` (byte-identical in all 13 repos) pins this repo's `cli.py` sha256 (three variants: base, +`contract --version`, +benefit availability) so a one-repo edit fails CI, and covers the fixes above across UTC/+07:00/-04:00 offsets. To change `cli.py`: edit every copy of the variant, then update `CLI_SHA256` in all 13 copies of the test.
 - Not done (needs a reviewed live capture, so left blocked): stronger drift markers and any page-phrase extraction; no page phrases were invented.
+
+## Done in this pass (pass 4: edge cases)
+
+- Shared `cli.py` (all 13 copies, pins updated in `tests/test_shared_cli.py`):
+  - `validate` accepted `" "` or a lone U+200B/BOM/soft hyphen as `id`,
+    `title`, `provider` or `eligibility_text` (schema `minLength: 1` counts
+    invisible characters); these are now rejected as blank.
+  - Record ids that differ only by invisible characters or surrounding
+    whitespace (`"x"` vs `"​x "`) are now reported as duplicates.
+  - `demo --query` compared raw `casefold()` strings, so Thai SARA AM (`ำ`)
+    did not match NIKHAHIT + SARA AA (either mark order), Thai digits did not
+    match ASCII (`๒๕๖๙` vs `2569`), and full-width Latin (`ＵＫ`) or a stray
+    zero-width space never matched; both sides are now NFKC-folded.
+  - Verified: new `TextNormalisationTest` (all cases fail on the old code);
+    full suite on Python 3.10 and 3.11; ruff 0.15.8 + 0.16.9.

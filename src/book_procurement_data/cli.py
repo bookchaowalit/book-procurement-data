@@ -3,6 +3,7 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from importlib.resources import files
 from urllib.parse import urlsplit
@@ -29,6 +30,23 @@ def timestamp(value):
     if result.tzinfo is None:
         raise ValueError("timezone required")
     return result.astimezone(timezone.utc)
+
+
+# Zero-width space/non-joiner/joiner, word joiner, BOM and soft hyphen render as nothing.
+INVISIBLE = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff\u00ad"))
+THAI_DIGITS = {0x0E50 + n: str(n) for n in range(10)}
+
+
+def visible(text):
+    """NFKC text without invisible characters or surrounding whitespace."""
+    return unicodedata.normalize("NFKC", text).translate(INVISIBLE).strip()
+
+
+def fold(text):
+    """Search key: NFKC (full-width Latin, Thai SARA AM == NIKHAHIT + SARA AA),
+    Thai digits as ASCII, nikhahit/tone-mark order unified, case-folded."""
+    text = visible(text).translate(THAI_DIGITS)
+    return re.sub("\u0e4d([\u0e48-\u0e4b])", "\\1\u0e4d", text).casefold()
 
 
 FORMATS = FormatChecker()
@@ -61,9 +79,13 @@ def validate(payload):
     ids = set()
     observed = timestamp(payload["retrieved_at"])
     for item in payload["items"]:
-        if item["id"] in ids:
+        # minLength 1 accepts " " or a lone U+200B; required text must be visible.
+        if not all(visible(item[key]) for key in ("id", "title", "provider", "eligibility_text")):
+            raise ValueError("required text field is blank")
+        record_id = visible(item["id"])
+        if record_id in ids:
             raise ValueError("duplicate record ID")
-        ids.add(item["id"])
+        ids.add(record_id)
         checked = timestamp(item["provenance"]["checked_at"])
         if checked > observed:
             raise ValueError("source check is later than retrieval")
@@ -93,7 +115,7 @@ def filter_items(payload, as_of, open_only=False, query="", max_age_hours=72):
         raise ValueError("max age must be nonnegative")
     result = []
     for item in payload["items"]:
-        if query.casefold() not in (item["title"] + " " + item["category"]).casefold():
+        if fold(query) not in fold(item["title"] + " " + item["category"]):
             continue
         if open_only:
             deadline = item["deadline"]

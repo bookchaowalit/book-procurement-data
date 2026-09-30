@@ -43,6 +43,38 @@ def mapping(value):
     return value if isinstance(value, dict) else {}
 
 
+ELIGIBILITY_MAX_CHARS = 400
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+_URL = re.compile(r"\b(?:https?://|www\.)\S+", re.IGNORECASE)
+_PHONE = re.compile(r"(?:\+|\b0)\d[\d\s()-]{7,}\d")
+_TAG = re.compile(r"<[^>]*>")
+
+
+def eligibility_criteria(tender):
+    """Bounded OCDS ``tender.eligibilityCriteria`` text without contact details.
+
+    Markup is stripped, whitespace collapsed, e-mails/URLs/phone numbers redacted
+    (the source policy forbids republishing contact bodies) and the text is capped.
+    Returns ``None`` when the field is absent, not a string, or empty.
+    """
+    value = tender.get("eligibilityCriteria")
+    if not isinstance(value, str):
+        return None
+    text = _TAG.sub(" ", value)
+    text = _EMAIL.sub("[contact removed]", text)
+    text = _URL.sub("[link removed]", text)
+    # Phone-like runs (leading + or 0, >= 9 digits); dates and amounts are kept.
+    text = _PHONE.sub(
+        lambda m: "[contact removed]" if sum(c.isdigit() for c in m.group()) >= 9 else m.group(), text
+    )
+    text = " ".join(text.split())
+    if not text:
+        return None
+    if len(text) > ELIGIBILITY_MAX_CHARS:
+        text = text[: ELIGIBILITY_MAX_CHARS - 1].rstrip() + "…"
+    return text
+
+
 def notice_url(release):
     documents = mapping(release.get("tender")).get("documents")
     for document in documents if isinstance(documents, list) else []:
@@ -121,6 +153,9 @@ def normalize(raw, source, checked_at):
             "submission, insurance and delivery requirements. "
             + (" ".join(suitability_notes) if suitability_notes else "Suitability fields are not stated in this release.")
         )
+        criteria = eligibility_criteria(tender)
+        if criteria:
+            requirements += " Eligibility criteria (from the notice): " + criteria
         item = {
             "id": record_id,
             "title": title,

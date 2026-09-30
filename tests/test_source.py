@@ -146,6 +146,35 @@ class SourceTests(unittest.TestCase):
         self.assertNotIn("#", item["source_url"])
         self.assertEqual(validate(data)["schema_version"], "procurement.v1")
 
+    def test_eligibility_criteria_are_mapped_bounded_and_contact_free(self):
+        payload = json.loads(self.raw().decode("utf-8"))
+        payload["releases"][0]["tender"]["eligibilityCriteria"] = (
+            "<p>Suppliers must hold ISO 27001 and Cyber Essentials Plus by 2026-10-01.</p>\n"
+            "Minimum turnover £250,000. Questions: bids@example.gov.uk, "
+            "call +44 1632 960000 or 01632 960001, see https://portal.example.gov.uk/x?id=1"
+        )
+        data = normalize(json.dumps(payload).encode("utf-8"), resource("source.json"), "2026-09-07T00:00:00Z")
+        item = data["items"][0]
+        requirements = item["terms"]["vendor_requirements"]
+        self.assertIn("Eligibility criteria (from the notice): Suppliers must hold ISO 27001", requirements)
+        self.assertIn("by 2026-10-01", requirements)
+        self.assertIn("£250,000", requirements)
+        for leaked in ("bids@example.gov.uk", "1632 960000", "01632 960001", "portal.example", "<p>"):
+            self.assertNotIn(leaked, requirements)
+        item["provenance"].update(raw_object_key="landing/test", bronze_manifest_key="control/manifests/test")
+        self.assertEqual(validate(data)["schema_version"], "procurement.v1")
+
+        payload["releases"][0]["tender"]["eligibilityCriteria"] = "x" * 5000
+        long_item = normalize(json.dumps(payload).encode("utf-8"), resource("source.json"), "2026-09-07T00:00:00Z")
+        criteria = long_item["items"][0]["terms"]["vendor_requirements"].split("(from the notice): ", 1)[1]
+        self.assertEqual(len(criteria), 400)
+        self.assertTrue(criteria.endswith("…"))
+
+        for absent in (None, 42, "   ", "<br/>"):
+            payload["releases"][0]["tender"]["eligibilityCriteria"] = absent
+            plain = normalize(json.dumps(payload).encode("utf-8"), resource("source.json"), "2026-09-07T00:00:00Z")
+            self.assertNotIn("Eligibility criteria", plain["items"][0]["terms"]["vendor_requirements"])
+
     def test_non_object_or_unlicensed_body_rejected(self):
         for body in (b"[]", b'{"version":"1.1","releases":[],"license":null}', b'{"version":"1.1","releases":[]}'):
             with self.subTest(body=body), self.assertRaises(ValueError):

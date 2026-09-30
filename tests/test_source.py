@@ -109,6 +109,48 @@ class SourceTests(unittest.TestCase):
         data = normalize(json.dumps(payload).encode("utf-8"), source, "2026-09-07T00:00:00Z")
         self.assertEqual([item["category"] for item in data["items"]], [case[0] for case in cases])
 
+    def test_malformed_releases_are_skipped_not_fatal(self):
+        payload = json.loads(self.raw().decode("utf-8"))
+        good = payload["releases"][0]
+        space_date = deepcopy(good)
+        space_date["ocid"] = "ocds-test-space-date"
+        space_date["tender"]["tenderPeriod"]["endDate"] = "2026-10-01 12:00:00+01:00"
+        naive_date = deepcopy(good)
+        naive_date["ocid"] = "ocds-test-naive-date"
+        naive_date["tender"]["tenderPeriod"]["endDate"] = "2026-10-01T12:00:00"
+        payload["releases"] += [
+            space_date,
+            naive_date,
+            None,
+            "not-a-release",
+            {"ocid": "ocds-null-tag", "tag": None, "tender": {"status": "active"}},
+            {"ocid": "ocds-null-parts", "tag": ["tender"], "buyer": None,
+             "tender": {"status": "active", "title": "t", "tenderPeriod": None, "value": None}},
+        ]
+        data = normalize(json.dumps(payload).encode("utf-8"), resource("source.json"), "2026-09-07T00:00:00Z")
+        for item in data["items"]:
+            item["provenance"].update(raw_object_key="landing/test", bronze_manifest_key="control/manifests/test")
+        self.assertEqual([item["id"] for item in data["items"]], ["ocds-test-open"])
+        self.assertEqual(validate(data)["data_status"], "live")
+
+    def test_null_optional_objects_do_not_crash(self):
+        payload = json.loads(self.raw().decode("utf-8"))
+        tender = payload["releases"][0]["tender"]
+        tender.update(value=None, suitability=None, documents=None)
+        payload["releases"][0]["ocid"] = "ocds test/with?odd#chars"
+        data = normalize(json.dumps(payload).encode("utf-8"), resource("source.json"), "2026-09-07T00:00:00Z")
+        item = data["items"][0]
+        item["provenance"].update(raw_object_key="landing/test", bronze_manifest_key="control/manifests/test")
+        self.assertEqual(item["value"]["amount"], None)
+        self.assertNotIn("?", item["source_url"])
+        self.assertNotIn("#", item["source_url"])
+        self.assertEqual(validate(data)["schema_version"], "procurement.v1")
+
+    def test_non_object_or_unlicensed_body_rejected(self):
+        for body in (b"[]", b'{"version":"1.1","releases":[],"license":null}', b'{"version":"1.1","releases":[]}'):
+            with self.subTest(body=body), self.assertRaises(ValueError):
+                normalize(body, resource("source.json"), "2026-09-07T00:00:00Z")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,10 +4,10 @@ import json
 import os
 import re
 import sys
-from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
-from .cli import resource, validate
+from .cli import resource, timestamp, validate
 
 
 def classify_category(tender, title, method):
@@ -29,25 +29,32 @@ def classify_category(tender, title, method):
 
 
 def parse_time(value):
+    """Parse only RFC3339 timestamps that the published contract also accepts."""
     if not isinstance(value, str):
         return None
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
+        return timestamp(value)
+    except (ValueError, OverflowError):
         return None
-    return parsed if parsed.tzinfo else None
+
+
+def mapping(value):
+    """Return a dict for optional OCDS objects that may be absent or null."""
+    return value if isinstance(value, dict) else {}
 
 
 def notice_url(release):
-    for document in release.get("tender", {}).get("documents", []):
-        candidate = document.get("url")
+    documents = mapping(release.get("tender")).get("documents")
+    for document in documents if isinstance(documents, list) else []:
+        candidate = mapping(document).get("url")
         if (
             isinstance(candidate, str)
             and candidate.startswith("https://www.contractsfinder.service.gov.uk/Notice/")
             and not any(mark in candidate for mark in ("?", "#"))
         ):
             return candidate
-    return "https://www.contractsfinder.service.gov.uk/Published/Notice/records/" + release["ocid"] + ".json"
+    ocid = quote(release["ocid"], safe="-_.")
+    return "https://www.contractsfinder.service.gov.uk/Published/Notice/records/" + ocid + ".json"
 
 
 def normalize(raw, source, checked_at):
@@ -56,9 +63,11 @@ def normalize(raw, source, checked_at):
         raise ValueError("unknown procurement source")
     body = json.loads(raw)
     if (
-        body.get("version") != "1.1"
+        not isinstance(body, dict)
+        or body.get("version") != "1.1"
         or not isinstance(body.get("releases"), list)
-        or "open-government-licence" not in body.get("license", "").casefold()
+        or not isinstance(body.get("license"), str)
+        or "open-government-licence" not in body["license"].casefold()
     ):
         raise ValueError("Contracts Finder source drift or unexpected response")
     observed = parse_time(checked_at)
@@ -68,25 +77,28 @@ def normalize(raw, source, checked_at):
     items = []
     seen = set()
     for release in body["releases"]:
+        if not isinstance(release, dict):
+            continue
         tender = release.get("tender")
-        if not isinstance(tender, dict) or "tender" not in release.get("tag", []):
+        tags = release.get("tag")
+        if not isinstance(tender, dict) or not isinstance(tags, list) or "tender" not in tags:
             continue
         if tender.get("status") != "active":
             continue
-        end_at = tender.get("tenderPeriod", {}).get("endDate")
+        end_at = mapping(tender.get("tenderPeriod")).get("endDate")
         cutoff = parse_time(end_at)
         if cutoff is None or cutoff <= observed:
             continue
         record_id = release.get("ocid")
         title = tender.get("title")
-        buyer = release.get("buyer", {}).get("name")
+        buyer = mapping(release.get("buyer")).get("name")
         if not all(isinstance(value, str) and value.strip() for value in (record_id, title, buyer)):
             continue
         if record_id in seen:
             continue
         seen.add(record_id)
 
-        tender_value = tender.get("value") or {}
+        tender_value = mapping(tender.get("value"))
         amount = tender_value.get("amount")
         currency = tender_value.get("currency")
         if not isinstance(amount, (int, float)) or isinstance(amount, bool) or amount < 0:
@@ -94,7 +106,7 @@ def normalize(raw, source, checked_at):
         elif not isinstance(currency, str) or not re.fullmatch(r"[A-Z]{3}", currency):
             amount, currency = None, None
 
-        suitability = tender.get("suitability") or {}
+        suitability = mapping(tender.get("suitability"))
         suitability_notes = []
         if isinstance(suitability.get("sme"), bool):
             suitability_notes.append("SME suitability: " + ("yes" if suitability["sme"] else "no"))

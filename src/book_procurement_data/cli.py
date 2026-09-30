@@ -3,9 +3,10 @@ import argparse
 import json
 import re
 import sys
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta, timezone
 from importlib.resources import files
 from urllib.parse import urlsplit
+
 from jsonschema import Draft202012Validator, FormatChecker
 
 

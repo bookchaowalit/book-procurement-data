@@ -33,6 +33,20 @@ book-procurement-data validate src/book_procurement_data/demo.json
 python -m unittest discover -s tests -v
 ```
 
+Developer checks (the same commands CI runs in `.github/workflows/ci.yml` on
+Python 3.10 and 3.12, plus a `contract`/`validate`/`demo` CLI smoke):
+
+```bash
+python -m pip install -e ".[dev]"
+ruff check .
+python -m pytest -q
+```
+
+All tests are offline: source adapters are exercised with inline fixtures, the
+capture entry point is only checked for its fail-closed guard, and no test needs
+the shared Solo Empire runtime or network access. `tests/test_policy.py` keeps
+`sources.json`, every `source*.json` policy and the bundled schema consistent.
+
 With dependencies already available, use `PYTHONPATH=src python3 -m book_procurement_data`.
 `demo` uses the fixed synthetic clock 2026-09-07T00:00:00Z unless `--as-of` is
 provided. `--open-only` excludes closed, unknown-deadline, expired, stale (72h

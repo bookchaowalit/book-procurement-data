@@ -14,10 +14,18 @@ def resource(name):
     return json.loads(files(__package__).joinpath(name).read_text(encoding="utf-8"))
 
 
+RFC3339 = re.compile(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})", re.ASCII)
+
+
 def timestamp(value):
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", value):
+    match = RFC3339.fullmatch(value)
+    if not match:
         raise ValueError("RFC3339 timestamp required")
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    base, fraction, offset = match.groups()
+    # Python 3.10 fromisoformat accepts only 3 or 6 fractional digits; normalise to
+    # microseconds so every supported interpreter accepts the same RFC3339 values.
+    micro = "." + (fraction + "000000")[:6] if fraction else ""
+    result = datetime.fromisoformat(base + micro + ("+00:00" if offset == "Z" else offset))
     if result.tzinfo is None:
         raise ValueError("timezone required")
     return result.astimezone(timezone.utc)
@@ -44,6 +52,12 @@ def validate(payload):
     if errors:
         # Do not echo input values or private payloads in error messages.
         raise ValueError("contract validation failed")
+    try:
+        # Python's json module turns NaN, Infinity and overflowing literals such as
+        # 1e400 into non-finite floats that JSON Schema "number" accepts; reject them.
+        json.dumps(payload, allow_nan=False)
+    except (TypeError, ValueError):
+        raise ValueError("payload must contain only finite JSON numbers") from None
     ids = set()
     observed = timestamp(payload["retrieved_at"])
     for item in payload["items"]:
@@ -59,7 +73,8 @@ def validate(payload):
         if payload["data_status"] == "live":
             if item["provenance"]["evidence_kind"] != "captured" or not item["provenance"]["raw_object_key"] or not item["provenance"]["bronze_manifest_key"]:
                 raise ValueError("live records require captured lake lineage")
-            if url.hostname == "example.org" or url.hostname.endswith(".example.org"):
+            host = url.hostname.rstrip(".")  # "example.org." is the same DNS name
+            if host == "example.org" or host.endswith(".example.org"):
                 raise ValueError("synthetic source cannot be live")
         elif item["provenance"]["evidence_kind"] != "fixture":
             raise ValueError("fixture envelope requires fixture records")

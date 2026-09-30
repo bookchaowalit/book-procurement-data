@@ -41,3 +41,11 @@ Score: 5.5/10 -> 7.5/10 (pass 1) -> 7.5/10 (pass 2) — one malformed OCDS relea
   Regression test in `tests/test_source.py`.
 - `source.json` stays content-identical to `source-contracts-finder-open-tenders.json`
   (asserted by `tests/test_policy.py`).
+
+## Done in this pass (pass 3)
+
+- Score: 7.5 -> 8.
+- OCDS `value.amount` of NaN/Infinity/`1e400` is now dropped (amount and currency null) instead of being published; tests also pin the tender cutoff as an instant across offsets and keep short-fraction `endDate`s on Python 3.10.
+- Shared `cli.py` (same edit in all 13 sibling copies): `validate` now rejects NaN, ±Infinity and overflowing literals such as `1e400` (Python's json turns them into non-finite floats that JSON Schema `number` accepted); `timestamp` normalises fractional seconds so Python 3.10 accepts the same RFC3339 values as 3.11+ (it rejected e.g. `.1Z`) and only ASCII digits match; a trailing-dot `example.org.` host can no longer be claimed `live`.
+- `tests/test_shared_cli.py` (byte-identical in all 13 repos) pins this repo's `cli.py` sha256 (three variants: base, +`contract --version`, +benefit availability) so a one-repo edit fails CI, and covers the fixes above across UTC/+07:00/-04:00 offsets. To change `cli.py`: edit every copy of the variant, then update `CLI_SHA256` in all 13 copies of the test.
+- Not done (needs a reviewed live capture, so left blocked): stronger drift markers and any page-phrase extraction; no page phrases were invented.

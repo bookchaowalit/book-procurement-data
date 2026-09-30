@@ -1,6 +1,7 @@
 """Capture open Contracts Finder tender notices through the shared lake runtime."""
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -133,7 +134,9 @@ def normalize(raw, source, checked_at):
         tender_value = mapping(tender.get("value"))
         amount = tender_value.get("amount")
         currency = tender_value.get("currency")
-        if not isinstance(amount, (int, float)) or isinstance(amount, bool) or amount < 0:
+        # json.loads turns NaN/Infinity/1e400 into non-finite floats; drop them
+        # (and the currency) rather than publish or crash on a malformed release.
+        if not isinstance(amount, (int, float)) or isinstance(amount, bool) or not math.isfinite(amount) or amount < 0:
             amount, currency = None, None
         elif not isinstance(currency, str) or not re.fullmatch(r"[A-Z]{3}", currency):
             amount, currency = None, None

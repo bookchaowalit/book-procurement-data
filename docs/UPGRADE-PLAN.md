@@ -1,10 +1,10 @@
 # Upgrade plan — book-procurement-data
 
-Score: 5.5/10 -> 7.5/10 (pass 1) -> 7.5/10 (pass 2) — one malformed OCDS release (null tag/buyer/period or non-RFC3339 end date) crashed or invalidated the whole capture; no CI.
+Score: **8/10** (5.5 -> 7.5 in pass 1; pass 2: 7.5; pass 3: 7.5 -> 8; pass 4: unchanged). Offline contract, adapters and CLI have offline tests and lint wired into CI (runs not yet confirmed green, see P0); live capture, source permission and consumers remain unverified by design. Before pass 1: one malformed OCDS release (null tag/buyer/period or non-RFC3339 end date) crashed or invalidated the whole capture; no CI.
 
 ## Backlog
 
-- P0: Confirm the new GitHub Actions CI is green on the first push and keep it required.
+- P0: Confirm GitHub Actions `CI` is green on `claude/untitled-session-bhlj06`. The branch is pushed, but every run so far ended within ~5 s with no job logs (runner never started, not a test failure); check the account's Actions/billing settings, then re-run.
 - P1: Page through Contracts Finder results (`cursor`) instead of the fixed first 100 notices.
   Paging happens in the shared capture runtime (`fetch_query`), so it needs a runtime change
   plus a reviewed live response for the `links.next` shape; not doable offline here.

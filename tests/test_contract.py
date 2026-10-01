@@ -1,7 +1,8 @@
 import copy
 import unittest
 from unittest.mock import patch
-from book_procurement_data.cli import filter_items, resource, validate, main
+
+from book_procurement_data.cli import filter_items, main, resource, validate
 
 
 class ContractTests(unittest.TestCase):

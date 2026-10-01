@@ -33,6 +33,20 @@ book-procurement-data validate src/book_procurement_data/demo.json
 python -m unittest discover -s tests -v
 ```
 
+Developer checks (the same commands CI runs in `.github/workflows/ci.yml` on
+Python 3.10 and 3.12, plus a `contract`/`validate`/`demo` CLI smoke):
+
+```bash
+python -m pip install -e ".[dev]"
+ruff check .
+python -m pytest -q
+```
+
+All tests are offline: source adapters are exercised with inline fixtures, the
+capture entry point is only checked for its fail-closed guard, and no test needs
+the shared Solo Empire runtime or network access. `tests/test_policy.py` keeps
+`sources.json`, every `source*.json` policy and the bundled schema consistent.
+
 With dependencies already available, use `PYTHONPATH=src python3 -m book_procurement_data`.
 `demo` uses the fixed synthetic clock 2026-09-07T00:00:00Z unless `--as-of` is
 provided. `--open-only` excludes closed, unknown-deadline, expired, stale (72h
@@ -54,8 +68,10 @@ See `sources.json` and `src/book_procurement_data/source-contracts-finder-open-t
 The Contracts Finder OCDS search API is reviewed for public read access. The
 adapter requests the official `stages=tender&limit=100` slice, then keeps active
 tender notices with future closing dates, values and
-structured buyer/suitability terms, while dropping public contact details and
-other source-body fields from the normalized contract. No bid, account creation
+structured buyer/suitability terms plus the notice's `eligibilityCriteria`
+(capped at 400 characters, with e-mails, links and phone numbers redacted), while
+dropping public contact details and other source-body fields from the normalized
+contract. No bid, account creation
 or messaging is performed.
 
 Implemented flow: approved source pull → immutable landing bytes

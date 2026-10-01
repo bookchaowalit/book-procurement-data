@@ -1,10 +1,9 @@
 # Upgrade plan — book-procurement-data
 
-Score: **8/10** (5.5 -> 7.5 in pass 1; pass 2: 7.5; pass 3: 7.5 -> 8; pass 4: unchanged). Offline contract, adapters and CLI have offline tests and lint wired into CI (runs not yet confirmed green, see P0); live capture, source permission and consumers remain unverified by design. Before pass 1: one malformed OCDS release (null tag/buyer/period or non-RFC3339 end date) crashed or invalidated the whole capture; no CI.
+Score: **8/10** (5.5 -> 7.5 in pass 1; pass 2: 7.5; pass 3: 7.5 -> 8; pass 4: unchanged). Offline contract, adapters and CLI are tested and linted in GitHub Actions CI (green on `claude/untitled-session-bhlj06`, 2026-10-01); live capture, source permission and consumers remain unverified by design. Before pass 1: one malformed OCDS release (null tag/buyer/period or non-RFC3339 end date) crashed or invalidated the whole capture; no CI.
 
 ## Backlog
 
-- P0: Confirm GitHub Actions `CI` is green on `claude/untitled-session-bhlj06`. The branch is pushed, but every run so far ended within ~5 s with no job logs (runner never started, not a test failure); check the account's Actions/billing settings, then re-run.
 - P1: Page through Contracts Finder results (`cursor`) instead of the fixed first 100 notices.
   Paging happens in the shared capture runtime (`fetch_query`), so it needs a runtime change
   plus a reviewed live response for the `links.next` shape; not doable offline here.
@@ -13,6 +12,10 @@ Score: **8/10** (5.5 -> 7.5 in pass 1; pass 2: 7.5; pass 3: 7.5 -> 8; pass 4: un
   replay report); do not mark gates passed without it.
 - P2: Consider extracting the byte-identical `cli.py` shared by the sibling `book-*-data`
   products into one versioned package once a consumer exists (today each repo vendors it).
+
+## Docs sync (2026-10-01)
+
+- Closed P0 "confirm CI green": the `CI` run on `claude/untitled-session-bhlj06` passed on both Python versions (earlier ~5 s runs without job logs were runner start failures, not test failures).
 
 ## Done in this pass (pass 1)
 

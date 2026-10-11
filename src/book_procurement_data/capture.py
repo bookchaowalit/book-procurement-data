@@ -230,9 +230,9 @@ def main(argv=None):
     selector = argparse.ArgumentParser(add_help=False)
     selector.add_argument("--source-id")
     selected, remaining = selector.parse_known_args(argv)
-    root = os.environ.get("SOLO_EMPIRE_ROOT")
+    root = os.environ.get("SOLO_DATA_LAKE_ROOT")
     if not root:
-        print("Set SOLO_EMPIRE_ROOT to the local shared capture/lake runtime.", file=sys.stderr)
+        print("Set SOLO_DATA_LAKE_ROOT to the local shared capture/lake runtime.", file=sys.stderr)
         return 2
     runtime = Path(root).resolve() / "infra/scripts"
     if not (runtime / "discovery/capture_runtime.py").is_file():

@@ -83,7 +83,7 @@ class SourcePolicyTests(unittest.TestCase):
         err = io.StringIO()
         with patch.dict(os.environ, {}, clear=True), redirect_stderr(err):
             self.assertEqual(capture.main(["records"]), 2)
-        with tempfile.TemporaryDirectory() as empty, patch.dict(os.environ, {"SOLO_EMPIRE_ROOT": empty}), redirect_stderr(err):
+        with tempfile.TemporaryDirectory() as empty, patch.dict(os.environ, {"SOLO_DATA_LAKE_ROOT": empty}), redirect_stderr(err):
             self.assertEqual(capture.main(["records"]), 2)
 
 

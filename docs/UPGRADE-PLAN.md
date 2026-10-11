@@ -32,7 +32,7 @@ Score: **8/10** (5.5 -> 7.5 in pass 1; pass 2: 7.5; pass 3: 7.5 -> 8; pass 4: un
 - Added `tests/test_policy.py`: `sources.json` ↔ `source*.json` ↔ schema category
   consistency, duplicate policy copies identical, https/no-query URLs, 6h minimum
   interval, `--source-id` traversal rejection, capture fail-closed without
-  `SOLO_EMPIRE_ROOT`, CLI `validate` exit codes without echoing input, bad demo clock.
+  `SOLO_DATA_LAKE_ROOT`, CLI `validate` exit codes without echoing input, bad demo clock.
 - README: documented the developer/CI commands and offline test boundary.
 
 ## Done in this pass (pass 2)

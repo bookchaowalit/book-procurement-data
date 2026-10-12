@@ -44,7 +44,7 @@ python -m pytest -q
 
 All tests are offline: source adapters are exercised with inline fixtures, the
 capture entry point is only checked for its fail-closed guard, and no test needs
-the shared solo-data-lake runtime or network access. `tests/test_policy.py` keeps
+the shared data-lake runtime or network access. `tests/test_policy.py` keeps
 `sources.json`, every `source*.json` policy and the bundled schema consistent.
 
 With dependencies already available, use `PYTHONPATH=src python3 -m book_procurement_data`.

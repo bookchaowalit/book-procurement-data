@@ -29,6 +29,12 @@ pythonpath = ["src"]
 target-version = "py310"
 line-length = 120
 
+[tool.ruff.format]
+# Vendored, byte-identical across the sibling book-*-data repos: cli.py is SHA-256 pinned by
+# tests/test_shared_cli.py, which is itself copied unchanged to every sibling. Formatting cli.py
+# breaks that check, so reformat them only together, in every sibling, with the pins updated.
+exclude = ["src/*/cli.py", "tests/test_shared_cli.py"]
+
 [tool.ruff.lint]
 # Correctness, import order and modern syntax; the compact one-line test style is kept.
 select = ["E4", "E9", "F", "I", "B", "UP"]

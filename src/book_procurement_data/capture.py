@@ -1,4 +1,5 @@
 """Capture open Contracts Finder tender notices through the shared lake runtime."""
+
 import argparse
 import json
 import math
@@ -65,9 +66,7 @@ def eligibility_criteria(tender):
     text = _EMAIL.sub("[contact removed]", text)
     text = _URL.sub("[link removed]", text)
     # Phone-like runs (leading + or 0, >= 9 digits); dates and amounts are kept.
-    text = _PHONE.sub(
-        lambda m: "[contact removed]" if sum(c.isdigit() for c in m.group()) >= 9 else m.group(), text
-    )
+    text = _PHONE.sub(lambda m: "[contact removed]" if sum(c.isdigit() for c in m.group()) >= 9 else m.group(), text)
     text = " ".join(text.split())
     if not text:
         return None
@@ -154,7 +153,11 @@ def normalize(raw, source, checked_at):
             "Buyer: " + buyer + "; category: " + str(category) + ". "
             "Review the official notice and its tender portal for supplier qualification, "
             "submission, insurance and delivery requirements. "
-            + (" ".join(suitability_notes) if suitability_notes else "Suitability fields are not stated in this release.")
+            + (
+                " ".join(suitability_notes)
+                if suitability_notes
+                else "Suitability fields are not stated in this release."
+            )
         )
         criteria = eligibility_criteria(tender)
         if criteria:

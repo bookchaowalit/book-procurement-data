@@ -53,7 +53,9 @@ class SourcePolicyTests(unittest.TestCase):
                 self.assertEqual(policy["permission_status"], self.catalog["permission_status"])
                 self.assertGreaterEqual(policy["min_interval_seconds"], 21600)
                 self.assertIn(policy["category"], caps)
-                category_enum = schema_for(policy["schema_version"])["properties"]["items"]["items"]["properties"]["category"]["enum"]
+                category_enum = schema_for(policy["schema_version"])["properties"]["items"]["items"]["properties"][
+                    "category"
+                ]["enum"]
                 self.assertIn(policy["category"], category_enum)
                 for key in ("source_url", "fetch_url"):
                     url = urlsplit(policy[key])
@@ -83,7 +85,11 @@ class SourcePolicyTests(unittest.TestCase):
         err = io.StringIO()
         with patch.dict(os.environ, {}, clear=True), redirect_stderr(err):
             self.assertEqual(capture.main(["records"]), 2)
-        with tempfile.TemporaryDirectory() as empty, patch.dict(os.environ, {"SOLO_DATA_LAKE_ROOT": empty}), redirect_stderr(err):
+        with (
+            tempfile.TemporaryDirectory() as empty,
+            patch.dict(os.environ, {"SOLO_DATA_LAKE_ROOT": empty}),
+            redirect_stderr(err),
+        ):
             self.assertEqual(capture.main(["records"]), 2)
 
 
@@ -130,7 +136,9 @@ class CliBoundaryTests(unittest.TestCase):
         category = data["items"][0]["category"]
         found = filter_items(data, "2026-09-07T00:00:00Z", query=category.upper())
         self.assertTrue(found)
-        self.assertTrue(all(category in item["category"] or category.casefold() in item["title"].casefold() for item in found))
+        self.assertTrue(
+            all(category in item["category"] or category.casefold() in item["title"].casefold() for item in found)
+        )
 
 
 if __name__ == "__main__":

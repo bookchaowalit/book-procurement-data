@@ -74,8 +74,13 @@ class SourceTests(unittest.TestCase):
         )
         self.assertEqual(classify_category({}, "Request for Proposals: digital service", "Open procedure"), "rfp")
         self.assertEqual(classify_category({}, "RFQ for office supplies", "Quotation"), "rfq")
-        self.assertEqual(classify_category({}, "Supplier registration portal", "Dynamic purchasing"), "vendor-registration")
-        self.assertEqual(classify_category({"frameworkAgreement": {"method": "open"}}, "Services", "Open procedure"), "framework-agreement")
+        self.assertEqual(
+            classify_category({}, "Supplier registration portal", "Dynamic purchasing"), "vendor-registration"
+        )
+        self.assertEqual(
+            classify_category({"frameworkAgreement": {"method": "open"}}, "Services", "Open procedure"),
+            "framework-agreement",
+        )
         self.assertEqual(classify_category({}, "Digital service tender", "Open procedure"), "public-tender")
 
     def test_normalize_emits_explicit_categories(self):
@@ -124,8 +129,12 @@ class SourceTests(unittest.TestCase):
             None,
             "not-a-release",
             {"ocid": "ocds-null-tag", "tag": None, "tender": {"status": "active"}},
-            {"ocid": "ocds-null-parts", "tag": ["tender"], "buyer": None,
-             "tender": {"status": "active", "title": "t", "tenderPeriod": None, "value": None}},
+            {
+                "ocid": "ocds-null-parts",
+                "tag": ["tender"],
+                "buyer": None,
+                "tender": {"status": "active", "title": "t", "tenderPeriod": None, "value": None},
+            },
         ]
         data = normalize(json.dumps(payload).encode("utf-8"), resource("source.json"), "2026-09-07T00:00:00Z")
         for item in data["items"]:

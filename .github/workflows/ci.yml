@@ -20,8 +20,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Lowest supported (requires-python) and a current release.
-        python-version: ["3.10", "3.13"]
+        # Lowest supported (requires-python), the release the previous workflow tested (3.12)
+        # and the current release.
+        python-version: ["3.10", "3.12", "3.13"]
     uses: bookchaowalit/platform-ci-workflows/.github/workflows/ci-python.yml@c37ef9d113eefb3ed45429717cb7ca201192c3fc # v1.0.1
     with:
       python-version: ${{ matrix.python-version }}
